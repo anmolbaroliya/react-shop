@@ -26,4 +26,7 @@ export interface GetProductsParams {
   search?: string;
   limit?: number;
   skip?: number;
+
+  sortBy?: "title" | "price" | "discountPercentage" | "rating";
+  order?: "asc" | "desc";
 }
