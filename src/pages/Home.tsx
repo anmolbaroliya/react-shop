@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { GetProductsParams, Product } from "../types/product";
-import { getProducts } from "../api/productApi";
+import {
+  Category,
+  ErrorState,
+  GetProductsParams,
+  Product,
+} from "../types/product";
+import { getCategories, getProducts } from "../api/productApi";
 import ProductCard from "../components/ProductCard";
+import ProductCardSkeleton from "../components/ProductCardSkeleton";
 
 function Home() {
   const LIMIT = 12;
@@ -9,7 +15,10 @@ function Home() {
   //products
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<ErrorState>({
+    categories: "",
+    products: "",
+  });
 
   //search
   const [search, setSearch] = useState("");
@@ -24,7 +33,13 @@ function Home() {
   const [sortBy, setSortBy] = useState<GetProductsParams["sortBy"]>();
   const [order, setOrder] = useState<GetProductsParams["order"]>();
 
-  async function fetchProducts(search: string) {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState("");
+
+  async function fetchProducts(search: string, category: string) {
+    setLoading(true);
+    setProducts([]);
+
     console.log("API called");
     try {
       const data = await getProducts({
@@ -33,18 +48,36 @@ function Home() {
         search,
         sortBy,
         order,
+        category,
       });
 
       setProducts(data.products);
       setTotalProducts(data.total);
     } catch (error) {
-      if (error instanceof Error) {
-        setError(error.message);
-      } else {
-        setError("Something went wrong");
-      }
+      setError((prev) => ({
+        ...prev,
+        products:
+          error instanceof Error ? error.message : "Something went wrong",
+      }));
     } finally {
-      setLoading(false);
+      // TODO: Remove artificial loading delay before production
+      setTimeout(() => {
+        setLoading(false);
+      }, 1000);
+    }
+  }
+
+  async function fetchCategories() {
+    try {
+      const data = await getCategories();
+
+      setCategories(data);
+    } catch (error) {
+      setError((prev) => ({
+        ...prev,
+        categories:
+          error instanceof Error ? error.message : "Something went wrong",
+      }));
     }
   }
 
@@ -53,7 +86,8 @@ function Home() {
 
   //searching
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearch(e.target.value);
+    const value = e.target.value;
+    setSearch(value);
   };
 
   //sorting
@@ -116,10 +150,27 @@ function Home() {
     ];
   }
 
-  //to fetch
+  //filtering
+  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+
+    setSelectedCategory(value);
+    setCurrentPage(1);
+    if (value) {
+      setSearch("");
+      setDebouncedSearch("");
+    }
+  };
+
+  //to fetch products
   useEffect(() => {
-    fetchProducts(debouncedSearch);
-  }, [debouncedSearch, currentPage, sortBy, order]);
+    fetchProducts(debouncedSearch, selectedCategory);
+  }, [debouncedSearch, currentPage, sortBy, order, selectedCategory]);
+
+  //to fetch categories
+  useEffect(() => {
+    fetchCategories();
+  }, []);
 
   //to debounce
   useEffect(() => {
@@ -127,6 +178,9 @@ function Home() {
       setCurrentPage(1);
       console.log("Updating debounced search:", search);
       setDebouncedSearch(search);
+      if (search) {
+        setSelectedCategory("");
+      }
     }, 2000);
 
     return () => {
@@ -134,16 +188,13 @@ function Home() {
     };
   }, [search]);
 
-  if (loading) {
-    return <h2>Loading...</h2>;
-  }
-
-  if (error) {
-    return <h2>{error}</h2>;
+  if (error.products) {
+    return <h2>{error.products}</h2>;
   }
 
   return (
     <>
+      {/* header */}
       <div className="products-header">
         <h1 className="page-title">Products</h1>
         <input
@@ -160,7 +211,7 @@ function Home() {
             value={selectedSort}
             onChange={handleSortChange}
           >
-            <option value="">Default</option>
+            <option value="">Sort By</option>
             <option value="price-asc">Price: Low to High</option>
             <option value="price-desc">Price: High to Low</option>
             <option value="discountPercentage-asc">
@@ -174,9 +225,29 @@ function Home() {
             <option value="title-desc">Title: Z-A</option>
           </select>
         </div>
+
+        <div className="toolbar">
+          <select
+            className="categories"
+            value={selectedCategory}
+            onChange={handleCategoryChange}
+          >
+            <option value="">Select Category</option>
+            {categories.map((category) => (
+              <option key={category.name} value={category.slug}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
+
       <div className="products">
-        {products.length > 0 ? (
+        {loading ? (
+          Array.from({ length: 12 }).map((_, index) => (
+            <ProductCardSkeleton key={index} />
+          ))
+        ) : products.length > 0 ? (
           products.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))

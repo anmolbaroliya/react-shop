@@ -12,7 +12,7 @@ export interface Product {
 }
 
 export interface ProductResponse{
-    products:Product[],
+    products:Product[];
     total:number;
     skip:number;
     limit:number;
@@ -29,4 +29,16 @@ export interface GetProductsParams {
 
   sortBy?: "title" | "price" | "discountPercentage" | "rating";
   order?: "asc" | "desc";
+  category?:string;
+}
+
+export interface Category{
+    slug:string;
+    name:string;
+    url: string;
+}
+
+export interface ErrorState{
+    products:string;
+    categories:string;
 }

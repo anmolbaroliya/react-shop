@@ -396,14 +396,15 @@ body {
   justify-content: center;
 }
 
-.footer button,span{
+.footer button,
+.footer span{
   width:40px;
   margin:5px;
   height: 40px;
 }
 
 /* sorting */
-.sort-select {
+.sort-select, .categories{
   padding: 10px 14px;
   min-width: 220px;
   height: 42px;
@@ -421,11 +422,11 @@ body {
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.sort-select:hover {
+.sort-select:hover, .categories:hover {
   border-color: #2563eb;
 }
 
-.sort-select:focus {
+.sort-select:focus, .categories:focus {
   border-color: #2563eb;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
