@@ -9,6 +9,7 @@ import { getCategories, getProducts } from "../api/productApi";
 import ProductCard from "../components/ProductCard";
 import ProductCardSkeleton from "../components/ProductCardSkeleton";
 import SearchBar from "../components/SearchBar";
+import useInfiniteScroll from "../hooks/useInfiniteScroll";
 
 function Home() {
   const LIMIT = 12;
@@ -41,6 +42,14 @@ function Home() {
   //TO check React.memo
   const [showCount, setShowCount] = useState(true);
 
+  //Infinite Scroll
+  const hasMore = products.length < totalProducts;
+  const { observerRef } = useInfiniteScroll({
+    loading,
+    hasMore,
+    onLoadMore: () => setCurrentPage((prev) => prev + 1),
+  });
+
   console.log("🏠 Home rendered", {
     loading,
     products: products.length,
@@ -70,7 +79,11 @@ function Home() {
         category,
       });
 
-      setProducts(data.products);
+      if (currentPage === 1) {
+        setProducts(data.products);
+      } else {
+        setProducts((prev) => [...prev, ...data.products]);
+      }
       setTotalProducts(data.total);
     } catch (error) {
       setError((prev) => ({
@@ -101,7 +114,7 @@ function Home() {
   }
 
   const totalPages = Math.ceil(totalProducts / LIMIT);
-  const pages = getVisiblePages(currentPage, totalPages);
+  //const pages = getVisiblePages(currentPage, totalPages);
 
   //searching
   const handleSearchChange = useCallback(
@@ -134,6 +147,9 @@ function Home() {
   };
 
   //pagination
+
+  {
+    /*}
   function getVisiblePages(
     currentPage: number,
     totalPages: number,
@@ -170,6 +186,8 @@ function Home() {
       "...",
       totalPages,
     ];
+  }
+*/
   }
 
   //filtering
@@ -281,18 +299,18 @@ function Home() {
       </div>
 
       <div className="products">
-        {loading ? (
+        {products.map((product) => (
+          <ProductCard key={product.id} product={product} />
+        ))}
+
+        {loading &&
           Array.from({ length: 12 }).map((_, index) => (
-            <ProductCardSkeleton key={index} />
-          ))
-        ) : products.length > 0 ? (
-          products.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))
-        ) : (
-          <h2>No products found.</h2>
-        )}
+            <ProductCardSkeleton key={`skeleton-${index}`} />
+          ))}
+
+        {!loading && products.length === 0 && <h2>No products found.</h2>}
       </div>
+      {/* 
       {totalPages > 1 && (
         <footer className="footer">
           {pages.map((page, index) => {
@@ -315,6 +333,8 @@ function Home() {
           })}
         </footer>
       )}
+      */}
+      <div ref={observerRef} />
     </>
   );
 }
