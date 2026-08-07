@@ -2,12 +2,14 @@ import { Product } from "../types/product";
 import { useNavigate } from "react-router-dom";
 import useCartStore from "../store/cartStore";
 import { useIsProductInCart } from "../store/cartSelectors";
+import React from "react";
 
 export interface ProductCardProps {
     product: Product
 }
 
 function ProductCard({product}:ProductCardProps){
+    console.log("🛍️ ProductCard rendered:", product.title);
 
     const navigate = useNavigate();
     const addToCart = useCartStore((state)=>state.addToCart); 
@@ -35,4 +37,4 @@ function ProductCard({product}:ProductCardProps){
     )
 }
 
-export default ProductCard;
+export default React.memo(ProductCard);

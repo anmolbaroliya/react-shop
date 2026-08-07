@@ -436,3 +436,29 @@ body {
   gap: 16px;
   align-items: center;
 }
+
+.product-count {
+  font-size: 18px;
+  font-weight: 500;
+  color: #666;
+  vertical-align: middle;
+}
+
+.show-count {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  font-size: 14px;
+  color: #555;
+
+  cursor: pointer;
+  user-select: none;
+}
+
+.show-count input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+
+  cursor: pointer;
+}

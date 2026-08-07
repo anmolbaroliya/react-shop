@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Category,
   ErrorState,
@@ -8,13 +8,14 @@ import {
 import { getCategories, getProducts } from "../api/productApi";
 import ProductCard from "../components/ProductCard";
 import ProductCardSkeleton from "../components/ProductCardSkeleton";
+import SearchBar from "../components/SearchBar";
 
 function Home() {
   const LIMIT = 12;
 
   //products
   const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<ErrorState>({
     categories: "",
     products: "",
@@ -33,14 +34,32 @@ function Home() {
   const [sortBy, setSortBy] = useState<GetProductsParams["sortBy"]>();
   const [order, setOrder] = useState<GetProductsParams["order"]>();
 
+  //filtering
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("");
 
+  //TO check React.memo
+  const [showCount, setShowCount] = useState(true);
+
+  console.log("🏠 Home rendered", {
+    loading,
+    products: products.length,
+    categories: categories.length,
+    search,
+    debouncedSearch,
+    currentPage,
+  });
+
   async function fetchProducts(search: string, category: string) {
     setLoading(true);
-    setProducts([]);
 
-    console.log("API called");
+    console.log("🌐 Fetch Products API", {
+      search: debouncedSearch,
+      category: selectedCategory,
+      page: currentPage,
+      sortBy,
+      order,
+    });
     try {
       const data = await getProducts({
         limit: LIMIT,
@@ -85,10 +104,13 @@ function Home() {
   const pages = getVisiblePages(currentPage, totalPages);
 
   //searching
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearch(value);
-  };
+  const handleSearchChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      setSearch(value);
+    },
+    [],
+  );
 
   //sorting
   const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -164,26 +186,35 @@ function Home() {
 
   //to fetch products
   useEffect(() => {
+    console.log("📦 Products Effect");
     fetchProducts(debouncedSearch, selectedCategory);
   }, [debouncedSearch, currentPage, sortBy, order, selectedCategory]);
 
-  //to fetch categories
+  //to fetch categories 3
   useEffect(() => {
+    console.log("📂 Categories Effect");
     fetchCategories();
   }, []);
 
   //to debounce
   useEffect(() => {
+    console.log("⌛ Debounce Effect");
     const timer = setTimeout(() => {
-      setCurrentPage(1);
+      console.log("⌛ Debounce Completed");
+      if (currentPage != 1) {
+        setCurrentPage(1);
+      }
       console.log("Updating debounced search:", search);
-      setDebouncedSearch(search);
+      if (debouncedSearch !== search) {
+        setDebouncedSearch(search);
+      }
       if (search) {
         setSelectedCategory("");
       }
     }, 2000);
 
     return () => {
+      console.log("🧹 Debounce Cleanup");
       clearTimeout(timer);
     };
   }, [search]);
@@ -196,15 +227,22 @@ function Home() {
     <>
       {/* header */}
       <div className="products-header">
-        <h1 className="page-title">Products</h1>
-        <input
-          className="search-input"
-          type="text"
-          placeholder="Search products..."
-          value={search}
-          onChange={handleSearchChange}
-        />
+        <h1 className="page-title">
+          Products{" "}
+          {showCount && (
+            <span className="product-count">({totalProducts})</span>
+          )}
+        </h1>
 
+        <label className="show-count">
+          <input
+            type="checkbox"
+            checked={showCount}
+            onChange={() => setShowCount((prev) => !prev)}
+          />
+          Show Count
+        </label>
+        <SearchBar value={search} onChange={handleSearchChange} />
         <div className="toolbar">
           <select
             className="sort-select"
