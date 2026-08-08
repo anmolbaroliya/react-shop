@@ -11,6 +11,7 @@ import ProductCardSkeleton from "../components/ProductCardSkeleton";
 import SearchBar from "../components/SearchBar";
 import useInfiniteScroll from "../hooks/useInfiniteScroll";
 import Pagination from "../components/Pagination";
+import useDebounce from "../hooks/useDebounce";
 
 function Home() {
   const LIMIT = 12;
@@ -26,7 +27,7 @@ function Home() {
 
   //search
   const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 2000);
 
   //pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -50,6 +51,7 @@ function Home() {
     loading,
     hasMore,
     onLoadMore: () => setCurrentPage((prev) => prev + 1),
+    enabled:!isPaginationEnabled
   });
 
   const totalPages = Math.ceil(totalProducts / LIMIT);
@@ -86,7 +88,7 @@ function Home() {
       if (isPaginationEnabled) {
         setProducts(data.products);
       } else {
-        if (currentPage == 1) {
+        if (currentPage === 1) {
           setProducts(data.products);
         } else {
           setProducts((prev) => [...prev, ...data.products]);
@@ -159,7 +161,6 @@ function Home() {
     setCurrentPage(1);
     if (value) {
       setSearch("");
-      setDebouncedSearch("");
     }
   };
 
@@ -177,26 +178,14 @@ function Home() {
 
   //to debounce
   useEffect(() => {
-    console.log("⌛ Debounce Effect");
-    const timer = setTimeout(() => {
-      console.log("⌛ Debounce Completed");
-      if (currentPage != 1) {
-        setCurrentPage(1);
-      }
-      console.log("Updating debounced search:", search);
-      if (debouncedSearch !== search) {
-        setDebouncedSearch(search);
-      }
-      if (search) {
-        setSelectedCategory("");
-      }
-    }, 2000);
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
 
-    return () => {
-      console.log("🧹 Debounce Cleanup");
-      clearTimeout(timer);
-    };
-  }, [search]);
+    if (debouncedSearch) {
+      setSelectedCategory("");
+    }
+  }, [debouncedSearch]);
 
   if (error.products) {
     return <h2>{error.products}</h2>;
@@ -264,7 +253,8 @@ function Home() {
           <ProductCard key={product.id} product={product} />
         ))}
 
-        {loading && !isPaginationEnabled &&
+        {loading &&
+          !isPaginationEnabled &&
           Array.from({ length: 12 }).map((_, index) => (
             <ProductCardSkeleton key={`skeleton-${index}`} />
           ))}
