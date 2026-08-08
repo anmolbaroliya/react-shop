@@ -10,9 +10,11 @@ import ProductCard from "../components/ProductCard";
 import ProductCardSkeleton from "../components/ProductCardSkeleton";
 import SearchBar from "../components/SearchBar";
 import useInfiniteScroll from "../hooks/useInfiniteScroll";
+import Pagination from "../components/Pagination";
 
 function Home() {
   const LIMIT = 12;
+  const isPaginationEnabled = true;
 
   //products
   const [products, setProducts] = useState<Product[]>([]);
@@ -50,6 +52,8 @@ function Home() {
     onLoadMore: () => setCurrentPage((prev) => prev + 1),
   });
 
+  const totalPages = Math.ceil(totalProducts / LIMIT);
+
   console.log("🏠 Home rendered", {
     loading,
     products: products.length,
@@ -79,10 +83,14 @@ function Home() {
         category,
       });
 
-      if (currentPage === 1) {
+      if (isPaginationEnabled) {
         setProducts(data.products);
       } else {
-        setProducts((prev) => [...prev, ...data.products]);
+        if (currentPage == 1) {
+          setProducts(data.products);
+        } else {
+          setProducts((prev) => [...prev, ...data.products]);
+        }
       }
       setTotalProducts(data.total);
     } catch (error) {
@@ -113,9 +121,6 @@ function Home() {
     }
   }
 
-  const totalPages = Math.ceil(totalProducts / LIMIT);
-  //const pages = getVisiblePages(currentPage, totalPages);
-
   //searching
   const handleSearchChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -145,50 +150,6 @@ function Home() {
     setSortBy(sortBy);
     setOrder(order);
   };
-
-  //pagination
-
-  {
-    /*}
-  function getVisiblePages(
-    currentPage: number,
-    totalPages: number,
-  ): (number | "...")[] {
-    if (totalPages <= 7) {
-      return Array.from({ length: totalPages }, (_, i) => i + 1);
-    }
-
-    // Beginning
-    if (currentPage <= 4) {
-      return [1, 2, 3, 4, 5, "...", totalPages];
-    }
-
-    // End
-    if (currentPage >= totalPages - 3) {
-      return [
-        1,
-        "...",
-        totalPages - 4,
-        totalPages - 3,
-        totalPages - 2,
-        totalPages - 1,
-        totalPages,
-      ];
-    }
-
-    // Middle
-    return [
-      1,
-      "...",
-      currentPage - 1,
-      currentPage,
-      currentPage + 1,
-      "...",
-      totalPages,
-    ];
-  }
-*/
-  }
 
   //filtering
   const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -303,38 +264,23 @@ function Home() {
           <ProductCard key={product.id} product={product} />
         ))}
 
-        {loading &&
+        {loading && !isPaginationEnabled &&
           Array.from({ length: 12 }).map((_, index) => (
             <ProductCardSkeleton key={`skeleton-${index}`} />
           ))}
 
         {!loading && products.length === 0 && <h2>No products found.</h2>}
       </div>
-      {/* 
-      {totalPages > 1 && (
-        <footer className="footer">
-          {pages.map((page, index) => {
-            if (page === "...") {
-              return (
-                <span key={`${page}-${index}`} className="ellipsis">
-                  ...
-                </span>
-              );
-            }
-            return (
-              <button
-                key={`${page}-${index}`}
-                onClick={() => setCurrentPage(page)}
-                className={currentPage === page ? "active-page" : ""}
-              >
-                {page}
-              </button>
-            );
-          })}
-        </footer>
+      {/* pagination */}
+      {isPaginationEnabled && totalPages > 1 && (
+        <Pagination
+          totalPages={totalPages}
+          currentPage={currentPage}
+          onClick={setCurrentPage}
+        />
       )}
-      */}
-      <div ref={observerRef} />
+      {/* Infinite Scroll */}
+      {!isPaginationEnabled && <div ref={observerRef} />}
     </>
   );
 }
